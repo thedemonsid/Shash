@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Send, Menu } from "lucide-react";
+import { Send, Menu, PanelLeftClose, PanelRightClose } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 const conversations = [
   { id: 1, title: "General Chat" },
@@ -74,8 +75,15 @@ export default function ChatApp() {
     messagesByConversation[selectedChat.id]
   );
   const [input, setInput] = useState("");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    const savedState = localStorage.getItem("isSidebarOpen");
+    if (savedState === null) {
+      localStorage.setItem("isSidebarOpen", "false");
+      return false;
+    } else {
+      return savedState === "true";
+    }
+  });
   const sendMessage = () => {
     if (!input.trim()) return;
     const newMessage: Message = {
@@ -92,32 +100,42 @@ export default function ChatApp() {
   const handleChatChange = (chat: { id: number; title: string }) => {
     setSelectedChat(chat);
     setMessages(messagesByConversation[chat.id]);
-    setIsSidebarOpen(false); // Close sidebar on mobile when a chat is selected
+    // setIsSidebarOpen(false); // Close sidebar on mobile when a chat is selected
   };
 
   return (
-    <div className="flex h-screen bg-background justify-center text-foreground font-sans overflow-clip">
+    <div className="flex h-screen bg-background justify-start text-foreground font-sans overflow-clip p-0">
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 w-64 bg-sidebar-background border-r border-sidebar-border p-4 flex flex-col transform ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:w-1/5`}
+        className={cn(
+          "fixed inset-y-0 left-0 bg-sidebar border-r border-sidebar-border p-4 flex flex-col transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
+          {
+            "translate-x-0": isSidebarOpen,
+            "-translate-x-full": !isSidebarOpen,
+          },
+          {
+            "md:w-1/6 md:z-0 z-20 w-1/2": isSidebarOpen,
+            hidden: !isSidebarOpen,
+          }
+        )}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Chats</h2>
-          <Menu
-            size={20}
-            className="cursor-pointer md:hidden"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          <PanelLeftClose
+            className={cn("cursor-pointer w-6 h-6", {
+              hidden: !isSidebarOpen,
+            })}
+            onClick={() => setIsSidebarOpen(false)}
           />
         </div>
         <div className="space-y-2">
           {conversations.map((chat) => (
             <div
               key={chat.id}
-              className={`p-3 cursor-pointer rounded-lg ${
-                selectedChat.id === chat.id ? "bg-secondary" : "hover:bg-muted"
-              }`}
+              className={cn("p-3 cursor-pointer rounded-lg", {
+                "bg-secondary": selectedChat.id === chat.id,
+                "hover:bg-muted": selectedChat.id !== chat.id,
+              })}
               onClick={() => handleChatChange(chat)}
             >
               {chat.title}
@@ -127,9 +145,16 @@ export default function ChatApp() {
       </div>
 
       {/* Chat Window */}
-      <div className="flex-1 flex flex-col p-6 justify-between h-screen bg-card ml-0 md:ml-64">
-        <div>
-          <h2 className="text-lg font-semibold mb-4">{selectedChat.title}</h2>
+      <div className="flex-1 flex flex-col justify-between h-screen bg-card md:p-6 py-2 px-1">
+        <div className="flex flex-col space-y-4">
+          <div className="flex  items-center align-middle gap-2">
+            <PanelRightClose
+              className={cn("cursor-pointer w-6 h-6", {
+                hidden: isSidebarOpen,
+              })}
+              onClick={() => setIsSidebarOpen(true)}
+            />
+          </div>
           <ScrollArea className="h-[calc(100vh-200px)]">
             <div className="flex justify-center">
               <div className="flex-1 space-y-8 max-w-3xl">
@@ -138,11 +163,12 @@ export default function ChatApp() {
                   .map((msg) => (
                     <Card
                       key={msg.id}
-                      className={
-                        msg.sender === "user"
-                          ? "ml-auto w-1/2 bg-secondary text-inherit border rounded-lg"
-                          : "w-full bg-inherit text-inherit border-none shadow-none "
-                      }
+                      className={cn("p-3 shadow-none", {
+                        "ml-auto w-1/2 bg-secondary text-inherit border rounded-lg":
+                          msg.sender === "user",
+                        "w-full bg-inherit text-inherit border-none shadow-none":
+                          msg.sender !== "user",
+                      })}
                     >
                       <CardContent className="p-3 shadow-none">
                         {msg.text}
@@ -159,11 +185,12 @@ export default function ChatApp() {
             <Textarea
               className="w-full bg-muted border-none text-foreground focus:ring-0 px-4 py-4 pr-10 rounded-xl"
               value={input}
+              rows={4}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
             />
             <Button
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-primary text-primary-foreground hover:bg-primary/60"
+              className="absolute right-2 bottom-2 bg-primary text-primary-foreground hover:bg-primary/60"
               onClick={sendMessage}
             >
               <Send size={16} />
