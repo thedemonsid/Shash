@@ -31,7 +31,11 @@ const messagesByConversation: { [key: number]: Message[] } = {
       text: "Feel free to ask anything. Our community is here to help you with any questions you might have. Whether it's about technology, hobbies, or life in general, there's always someone who can provide an answer or point you in the right direction. Don't be shy, we're all here to learn and grow together. If you have any suggestions or feedback, please let us know. We're always looking to improve and make this space better for everyone. Thank you for being a part of our community!",
       sender: "bot",
     },
-    { id: 1, text: "This is a general chat message.", sender: "user" },
+    {
+      id: 1,
+      text: "This is a general chat message.By the User This is a general chat message.By the User",
+      sender: "user",
+    },
     { id: 4, text: "This is another general chat message.", sender: "bot" },
     { id: 5, text: "This is a general chat message.", sender: "user" },
     { id: 6, text: "This is another general chat message.", sender: "bot" },
@@ -75,15 +79,20 @@ export default function ChatApp() {
     messagesByConversation[selectedChat.id]
   );
   const [input, setInput] = useState("");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
-    const savedState = localStorage.getItem("isSidebarOpen");
-    if (savedState === null) {
-      localStorage.setItem("isSidebarOpen", "false");
-      return false;
-    } else {
-      return savedState === "true";
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedState = localStorage.getItem("isSidebarOpen");
+      if (savedState === null) {
+        localStorage.setItem("isSidebarOpen", "false");
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(savedState === "true");
+      }
     }
-  });
+  }, []);
+
   const sendMessage = () => {
     if (!input.trim()) return;
     const newMessage: Message = {
@@ -114,7 +123,7 @@ export default function ChatApp() {
             "-translate-x-full": !isSidebarOpen,
           },
           {
-            "md:w-1/6 md:z-0 z-20 w-1/2": isSidebarOpen,
+            "md:w-1/6 md:z-0 z-20 w-1/2 md:min-w-64": isSidebarOpen,
             hidden: !isSidebarOpen,
           }
         )}
@@ -163,8 +172,8 @@ export default function ChatApp() {
                   .map((msg) => (
                     <Card
                       key={msg.id}
-                      className={cn("p-3 shadow-none", {
-                        "ml-auto w-1/2 bg-secondary text-inherit border rounded-lg":
+                      className={cn("shadow-none", {
+                        "ml-auto max-w-[50%] w-fit bg-secondary text-inherit border rounded-lg":
                           msg.sender === "user",
                         "w-full bg-inherit text-inherit border-none shadow-none":
                           msg.sender !== "user",
